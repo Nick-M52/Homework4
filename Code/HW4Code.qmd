@@ -1,0 +1,7 @@
+---
+title: "HW4Code"
+format: html
+editor: visual
+---
+
+1. How does fish length predict fish weightfor trout perch (across all sample years)?
