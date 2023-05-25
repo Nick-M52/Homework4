@@ -4,7 +4,12 @@ format: html
 editor: visual
 editor_options: 
   chunk_output_type: inline
+  comments:
+  utterances:
+    repo: https://github.com/Nick-M52/Homework4.git
 ---
+
+
 
 1. How does fish length predict fish weightfor trout perch (across all sample years)?
 
@@ -127,7 +132,7 @@ fishlengths<-dt1
 ```
 
 ```{r}
-head(fishlenghts)
+head(fishlengths)
 
 ```
 
@@ -143,6 +148,16 @@ library(NatParksPalettes) # one example of color palette package
 library(wesanderson) # another example of a color palette package
 library(patchwork) # putting plots together
 ```
+
+```{r}
+library(performance)
+library(broom)
+library(flextable)
+library(ggeffects)
+library(car)
+```
+
+
 #2 code)
 
 ```{r}
@@ -218,6 +233,78 @@ summary(lmlength_mass)
 #creating table to summarize anova table
 model_summary<-summary(lmlength_mass)
 #storing anova table as object
-model_squares<- anova(modelobject)
+model_squares<- anova(lmlength_mass)
+model_squares
 ```
 
+
+```{r}
+model_squares_table<-tidy(model_squares) %>% 
+  # round the sum of squares and mean squares columns 
+  mutate(across(sumsq:meansq, ~ round(.x, digits = 5))) %>% 
+  # round the F-statistic 
+  mutate(statistic = round(statistic, digits = 1)) %>% 
+  # replace the small p value with < 0.001
+  mutate(p.value = case_when(
+    p.value < 0.001 ~ "< 0.001"
+  )) %>% 
+  # rename length to be more meaningful
+  mutate(term = case_when(
+    term == "length" ~ "Length (mm)",
+    term == "weight" ~ "Weight (g)",
+    TRUE ~ term
+  )) %>% 
+  # make the data frame a flextable object
+  flextable() %>% 
+  # change the header labels to be meaningful
+  set_header_labels(df = "Degrees of Freedom", 
+                    sumsq = "Sum of squares",
+                    meansq = "Mean squares",
+                    statistic = "F-statistic",
+                    p.value = "p-value")
+
+model_squares_table
+```
+
+#8 answer)
+
+The information of the anova table suggests similar information to the summary table. It shows a strong correlation between the predictor and response, however the low p-value suggests that the null hypothesis should be rejected
+
+#9 answer)
+
+The linear regression revealed a significant direct relationship between the weight of the plants and their length (coefficient estimate= 3.00965, t(91088) = 369.7, p < 2e-16). The model accounted for a substantial amount of the variability in weight (R² = 0.6001), which was supported by the highly significant F-statistic (F(1, 91088) = 1.367e+05. These findings suggest that length is a strong predictor of weight, but there is a high variance in the data.
+
+
+
+#10 code)
+
+```{r}
+# extract model predictions using ggpredict
+predictions <- ggpredict(lmlength_mass, terms = "length")
+
+predictions
+```
+
+```{r}
+
+plot_predictions <- ggplot(data = complete_data, 
+                           aes(x = length, y = weight)) +
+  # first plot the underlying data from maples_data
+  geom_point() +
+  # then plot the predictions
+  geom_line(data = predictions, 
+            aes(x = x, y = predicted), 
+            color = "blue", linewidth = 1) +
+  # then plot the 95% confidence interval from ggpredict
+  geom_ribbon(data = predictions, 
+              aes(x = x, y = predicted, ymin = -312, ymax = 3621), 
+              alpha = 0.1) +
+  # theme and meaningful labels
+  theme_bw() +
+  labs(x = "Length (mm)",
+       y = "Weight (g)")
+
+plot_predictions
+#the CI was not showing on the graph so I manually input the data which does not display them quite correctly but gives an idea of the CI
+```
+a) This plot shows the predicted weight value based on the length value with the blue line. The filtered data is plotted on this to show how it compares to the predicted values. The grey area is the confidence interval and the mean of the values is expected to fall within this.
