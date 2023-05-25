@@ -2,6 +2,222 @@
 title: "HW4Code"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: inline
 ---
 
 1. How does fish length predict fish weightfor trout perch (across all sample years)?
+
+Problem 1-
+
+1) Null Hypothesis: There is no statistically significant  relationship between the lengths of fish and their weight for trout perch.
+
+Alternative Hypothesis:There is a statistically significant relationship between the lengths of fish and their weight for trout perch.
+
+
+This is the code to clean up the data provided by the data creators:
+
+```{r}
+
+# Package ID: knb-lter-ntl.6.34 Cataloging System:https://pasta.edirepository.org.
+# Data set title: North Temperate Lakes LTER: Fish Lengths and Weights 1981 - current.
+# Data set creator:  John Magnuson - University of Wisconsin-Madison 
+# Data set creator:  Stephen Carpenter - University of Wisconsin-Madison 
+# Data set creator:  Emily Stanley - University of Wisconsin-Madison 
+# Metadata Provider:  NTL Information Manager - University of Wisconsin-Madison 
+# Contact:    -  NTL LTER  - ntl.infomgr@gmail.com
+# Stylesheet v2.11 for metadata conversion into program: John H. Porter, Univ. Virginia, jporter@virginia.edu 
+
+inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-ntl/6/34/7dddb5e70250d2e24537e34272316220" 
+infile1 <- tempfile()
+try(download.file(inUrl1,infile1,method="curl"))
+if (is.na(file.size(infile1))) download.file(inUrl1,infile1,method="auto")
+
+                   
+ dt1 <-read.csv(infile1,header=F 
+          ,skip=1
+            ,sep=","  
+                ,quot='"' 
+        , col.names=c(
+                    "lakeid",     
+                    "year4",     
+                    "sampledate",     
+                    "gearid",     
+                    "spname",     
+                    "sampletype",     
+                    "depth",     
+                    "rep",     
+                    "indid",     
+                    "length",     
+                    "weight",     
+                    "sex",     
+                    "fishpart",     
+                    "spseq",     
+                    "flag"    ), check.names=TRUE)
+               
+unlink(infile1)
+		    
+# Fix any interval or ratio columns mistakenly read in as nominal and nominal columns read as numeric or dates read as strings
+                
+if (class(dt1$lakeid)!="factor") dt1$lakeid<- as.factor(dt1$lakeid)
+if (class(dt1$year4)=="factor") dt1$year4 <-as.numeric(levels(dt1$year4))[as.integer(dt1$year4) ]               
+if (class(dt1$year4)=="character") dt1$year4 <-as.numeric(dt1$year4)                                   
+# attempting to convert dt1$sampledate dateTime string to R date structure (date or POSIXct)                                
+tmpDateFormat<-"%Y-%m-%d"
+tmp1sampledate<-as.Date(dt1$sampledate,format=tmpDateFormat)
+# Keep the new dates only if they all converted correctly
+if(length(tmp1sampledate) == length(tmp1sampledate[!is.na(tmp1sampledate)])){dt1$sampledate <- tmp1sampledate } else {print("Date conversion failed for dt1$sampledate. Please inspect the data and do the date conversion yourself.")}                                                                    
+rm(tmpDateFormat,tmp1sampledate) 
+if (class(dt1$gearid)!="factor") dt1$gearid<- as.factor(dt1$gearid)
+if (class(dt1$spname)!="factor") dt1$spname<- as.factor(dt1$spname)
+if (class(dt1$sampletype)!="factor") dt1$sampletype<- as.factor(dt1$sampletype)
+if (class(dt1$depth)=="factor") dt1$depth <-as.numeric(levels(dt1$depth))[as.integer(dt1$depth) ]               
+if (class(dt1$depth)=="character") dt1$depth <-as.numeric(dt1$depth)
+if (class(dt1$rep)=="factor") dt1$rep <-as.numeric(levels(dt1$rep))[as.integer(dt1$rep) ]               
+if (class(dt1$rep)=="character") dt1$rep <-as.numeric(dt1$rep)
+if (class(dt1$indid)!="factor") dt1$indid<- as.factor(dt1$indid)
+if (class(dt1$length)=="factor") dt1$length <-as.numeric(levels(dt1$length))[as.integer(dt1$length) ]               
+if (class(dt1$length)=="character") dt1$length <-as.numeric(dt1$length)
+if (class(dt1$weight)=="factor") dt1$weight <-as.numeric(levels(dt1$weight))[as.integer(dt1$weight) ]               
+if (class(dt1$weight)=="character") dt1$weight <-as.numeric(dt1$weight)
+if (class(dt1$sex)!="factor") dt1$sex<- as.factor(dt1$sex)
+if (class(dt1$fishpart)!="factor") dt1$fishpart<- as.factor(dt1$fishpart)
+if (class(dt1$spseq)!="factor") dt1$spseq<- as.factor(dt1$spseq)
+if (class(dt1$flag)!="factor") dt1$flag<- as.factor(dt1$flag)
+                
+# Convert Missing Values to NA for non-dates
+                
+
+
+# Here is the structure of the input data frame:
+str(dt1)                            
+attach(dt1)                            
+# The analyses below are basic descriptions of the variables. After testing, they should be replaced.                 
+
+summary(lakeid)
+summary(year4)
+summary(sampledate)
+summary(gearid)
+summary(spname)
+summary(sampletype)
+summary(depth)
+summary(rep)
+summary(indid)
+summary(length)
+summary(weight)
+summary(sex)
+summary(fishpart)
+summary(spseq)
+summary(flag) 
+                # Get more details on character variables
+                 
+summary(as.factor(dt1$lakeid)) 
+summary(as.factor(dt1$gearid)) 
+summary(as.factor(dt1$spname)) 
+summary(as.factor(dt1$sampletype)) 
+summary(as.factor(dt1$indid)) 
+summary(as.factor(dt1$sex)) 
+summary(as.factor(dt1$fishpart)) 
+summary(as.factor(dt1$spseq)) 
+summary(as.factor(dt1$flag))
+detach(dt1)               
+        
+fishlengths<-dt1
+
+```
+
+```{r}
+head(fishlenghts)
+
+```
+
+```{r}
+#installing packages
+library(tidyverse) # general usage
+library(here) # organization
+library(plotly) # interactive plots
+library(skimr) # quick glimpses at data
+library(naniar) # visualizing missing data
+library(magick) # inserting images into plots
+library(NatParksPalettes) # one example of color palette package
+library(wesanderson) # another example of a color palette package
+library(patchwork) # putting plots together
+```
+#2 code)
+
+```{r}
+#creating filtered data frame
+library(dplyr)
+
+# Specify the columns you want to keep
+length_wt_yr <- c("year4", "length", "weight")
+
+# Filter the data table to include only the specified columns
+filtered_data <- fishlengths %>%
+  select(all_of(length_wt_yr))
+
+view(filtered_data)
+```
+
+```{r}
+#visuaization of the missing data for the filtered dataset
+gg_miss_var(filtered_data)
+
+```
+#2 answer)
+a) The missing data is relevant to our hypothesis because there are several missing data points for weight which could alter the results. However, the 500+ data points we can reference should be good enough to test our hypothesis.
+
+#3 code)
+```{r}
+#removing rows with NA data
+complete_data<- filtered_data[complete.cases(filtered_data),]
+view(complete_data)
+```
+
+```{r}
+#exploring the relationship visually
+ggplot(data = complete_data, aes(x = length, y = weight)) +
+  geom_point()
+```
+
+
+```{r}
+#linear regression test
+lmlength_mass<- lm(weight~length, data= complete_data)
+#show results
+summary(lmlength_mass)
+```
+#4 code)
+```{r}
+#creating diagnostic plots to visually check assumptions
+par(mfrow = c(2,2))
+par(mar = c(2, 4, 2, 2))
+plot(lmlength_mass)
+```
+
+#5 answer)
+
+RvF- The residuals are not evenly and randomly distributed, so the assumption of homoscedasticity is violated.
+
+S-L: These residuals are not evenly and randomly distributed as well, so the assumption of homoscedasticity is violated.
+
+Q-Q: These residuals are not normally distribute because they do not follow the straight trend line.
+
+RvL- These residuals show that outliers largely affect the data and that the assumption of homoscedasticity is violated.
+
+We can infer that the residuals are not linear and that the data is heteroscedastic so the linear regression is not a good predictor of values.
+
+#6 code)
+
+```{r}
+#summary of linear regression
+summary(lmlength_mass)
+#this summary shows a strong relationship between predictor and response. high r squared indicates good fit. intercept and length coefficients statistically significant
+```
+```{r}
+#creating table to summarize anova table
+model_summary<-summary(lmlength_mass)
+#storing anova table as object
+model_squares<- anova(modelobject)
+```
+
